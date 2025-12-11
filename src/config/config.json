@@ -1,0 +1,19 @@
+{
+  "s3_bucket": "cmcd-etl-weather-lake",
+  "bronze_prefix": "bronze/raw",
+  "api_base": "https://api.open-meteo.com/v1/forecast",
+  "timezone": "UTC",
+  "parallel_workers": 10,
+  "retry_attempts": 5,
+  "timeout_seconds": 10,
+  "hourly_parameters": [
+    "temperature_2m",
+    "relativehumidity_2m",
+    "precipitation",
+    "wind_speed_10m",
+    "windgusts_10m",
+    "pressure_msl",
+    "uv_index",
+    "shortwave_radiation"
+  ]
+}
