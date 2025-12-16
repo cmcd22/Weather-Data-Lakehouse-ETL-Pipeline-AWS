@@ -69,6 +69,15 @@ def build_url(lat, lon):
         f"&timezone={CONFIG['timezone']}"
     )
 
+def s3_object_exists(bucket, key):
+    try:
+        s3.head_object(Bucket=bucket, Key=key)
+        return True
+    except s3.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            return False
+        raise
+
 
 # Upload data to S3
 def upload_to_s3(data, city, ts):
@@ -79,6 +88,10 @@ def upload_to_s3(data, city, ts):
 
     tag_city = quote(city, safe='')
     tag_timestamp = quote(ts.isoformat(), safe='')
+
+    if s3_object_exists(S3_BUCKET, key):
+        log.info(f"[CITY={city}] Data already exists, skipping → {key}")
+        return
 
     s3.put_object(
         Bucket=S3_BUCKET,

@@ -2,7 +2,7 @@ import sys
 from awsglue.context import GlueContext
 from pyspark.context import SparkContext
 import pyspark.sql.functions as F
-from pyspark.sql.functions import regexp_extract, input_file_name
+from pyspark.sql.functions import regexp_extract, input_file_name, col
 
 BRONZE_PATH = "s3://cmcd-etl-weather-lake/bronze/raw/*/*/*/*/*/data.json"
 SILVER_PATH = "s3://cmcd-etl-weather-lake/silver/hourly/"
@@ -61,6 +61,24 @@ df = (
       .withColumn("month", F.month("timestamp"))
       .withColumn("day", F.dayofmonth("timestamp"))
 )
+
+# Check for invalid data
+invalid_rows = df.filter(
+    (col("temperature") < -50) |
+    (col("temperature") > 60) |
+    (col("precipitation") < 0) |
+    (col("windspeed") < 0) |
+    (col("windgusts") < 0) |
+    (col("uv_index") < 0) |
+    (col("uv_index") > 15) |
+    col("timestamp").isNull()
+)
+
+if invalid_rows.count() > 0:
+    invalid_rows.show(10, truncate=False)
+    raise Exception(
+        "Silver data quality check failed: invalid hourly weather records detected"
+    )
 
 # Write partitioned parquet to Silver layer
 df.write.mode("overwrite").partitionBy("city", "year", "month", "day").parquet(SILVER_PATH)
